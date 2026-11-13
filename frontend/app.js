@@ -1,19 +1,18 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ১. আপনার Cloudflare Worker URL এখানে দিন
-const WORKER_API_URL = "https://ai-word-game-api.YOUR_SUBDOMAIN.workers.dev";
+// ১. আপনার লাইভ Cloudflare Worker URL
+const WORKER_API_URL = "https://ai-word-master-api.asraffoisal4.workers.dev";
 
-// ২. আপনার Firebase Config এখানে দিন (Firebase Console -> Project Settings থেকে পাবেন)
+// ২. আপনার Firebase Configuration
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDOHterZlsjF-rkR86I0duLtPKtBWC_qLQ",
+  authDomain: "ai-word-master.firebaseapp.com",
+  projectId: "ai-word-master",
+  storageBucket: "ai-word-master.firebasestorage.app",
+  messagingSenderId: "76624828452",
+  appId: "1:76624828452:web:9d2d214195bb9b6c9b60b1"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
