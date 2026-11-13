@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI MindMaster — Intelligent Word Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧠 AI Word Master</h1>
+      <p class="subtitle">Powered by Gemini AI • Cloudflare • Firebase</p>
+    </header>
+
+    <!-- Top Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-box"><span>Score</span><strong id="score">0</strong></div>
+      <div class="stat-box"><span>Level</span><strong id="difficulty">Medium</strong></div>
+      <div class="stat-box"><span>Timer</span><strong id="timer">60s</strong></div>
+      <div class="stat-box"><span>Attempts</span><strong id="attempts">0 / 5</strong></div>
+    </div>
+
+    <!-- Setup Panel -->
+    <div id="setup-panel" class="card">
+      <input type="text" id="player-name" placeholder="আপনার নাম লিখুন (Leaderboard-এর জন্য)" />
+      <select id="category-select">
+        <option value="Technology & Devices">Technology & Devices</option>
+        <option value="Science & Space">Science & Space</option>
+        <option value="Daily Life & Objects">Daily Life & Objects</option>
+        <option value="Nature & Environment">Nature & Environment</option>
+        <option value="Abstract Concepts">Abstract Concepts</option>
+      </select>
+      <button id="start-btn" class="primary-btn">Start AI Round 🚀</button>
+    </div>
+
+    <!-- Active Game Arena -->
+    <div id="game-panel" class="card hidden">
+      <div class="badge-row">
+        <span id="challenge-badge" class="badge">AI Challenge</span>
+        <span id="word-len-badge" class="badge">Length: ?</span>
+      </div>
+
+      <div id="hints-container" class="hints-box"></div>
+
+      <!-- Semantic Closeness Meter -->
+      <div class="meter-wrapper">
+        <label>AI Semantic Closeness: <span id="closeness-text">0%</span></label>
+        <div class="meter-bar"><div id="closeness-fill"></div></div>
+      </div>
+
+      <!-- Guess Input -->
+      <form id="guess-form" class="input-group">
+        <input type="text" id="guess-input" placeholder="আপনার অনুমান লিখুন..." autocomplete="off" required />
+        <button type="submit" id="submit-guess-btn">Guess</button>
+      </form>
+
+      <div id="ai-feedback-box" class="feedback hidden"></div>
+      <div id="explanation-box" class="explanation hidden"></div>
+
+      <div class="action-row">
+        <button id="next-round-btn" class="primary-btn hidden">Next AI Round ➡️</button>
+        <button id="end-session-btn" class="secondary-btn">Finish & Get AI Report 📊</button>
+      </div>
+    </div>
+
+    <!-- AI Coach Report -->
+    <div id="report-panel" class="card hidden">
+      <h3>🎓 AI Coach Performance Analysis</h3>
+      <p id="player-rank-title" class="rank-title"></p>
+      <p id="coach-feedback-text"></p>
+      <button onclick="location.reload()" class="primary-btn">Play Again 🔄</button>
+    </div>
+
+    <!-- Firebase Leaderboard -->
+    <div class="card">
+      <h3>🏆 Global Leaderboard (Firebase)</h3>
+      <ul id="leaderboard-list"><li>Loading scores...</li></ul>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
