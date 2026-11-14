@@ -23,6 +23,8 @@ const BACKUP_CHALLENGES = [
   { secret_word: "DATABASE", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I store organized collections of information so apps can retrieve them in milliseconds." },
   { secret_word: "COMPILER", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I translate human-readable source code into machine language before execution." },
   { secret_word: "SATELLITE", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I orbit high above Earth, relaying signals, weather data, and GPS coordinates." }
+  { secret_word: "CONFIDENCE", challenge_type: "Vocabulary Mode", word_length: 10, first_hint: "I am the quiet inner assurance in your own abilities that lets you step onto a stage or face a challenge without fear." },
+  { secret_word: "FAITH", challenge_type: "Vocabulary Mode", word_length: 5, first_hint: "I am complete trust and belief in something or someone, even when you cannot see the outcome with your own eyes."},
 ];
 
 // Game State (Session Management)
