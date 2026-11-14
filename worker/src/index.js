@@ -49,11 +49,15 @@ function jsonResponse(data, headers, status = 200) {
 }
 
 async function callGemini(prompt, schema, apiKey) {
-  const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-3.1-pro-preview"];
+  const models = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-3.8-flash"
+  ];
   let lastError = "";
 
   for (const model of models) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const payload = {
@@ -80,7 +84,7 @@ async function callGemini(prompt, schema, apiKey) {
       lastError = await res.text();
       // যদি সার্ভার ব্যস্ত থাকে (503 বা 429), তবে ১ সেকেন্ড অপেক্ষা করে আবার চেষ্টা করবে
       if (res.status === 503 || res.status === 429) {
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 500));
         continue;
       }
       break;

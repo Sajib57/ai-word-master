@@ -18,15 +18,28 @@ const db = getFirestore(app);
 
 // জরুরি ব্যাকআপ শব্দভাণ্ডার (যদি কখনো AI সার্ভার সাময়িক ব্যস্ত থাকে)
 const BACKUP_CHALLENGES = [
-  { secret_word: "CONFIDENCE", challenge_type: "Vocabulary Mode", word_length: 10, first_hint: "I am the quiet inner assurance in your own abilities that lets you step onto a stage or face a challenge without fear." },
-  { secret_word: "FAITH", challenge_type: "Vocabulary Mode", word_length: 5, first_hint: "I am complete trust and belief in something or someone, even when you cannot see the outcome with your own eyes." },
-  { secret_word: "ALGORITHM", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I am a step-by-step recipe of logic that computers follow to solve problems." },
-  { secret_word: "FIREWALL", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I stand as a digital guard between a trusted network and untrusted traffic." },
-  { secret_word: "DATABASE", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I store organized collections of information so apps can retrieve them in milliseconds." },
-  { secret_word: "COMPILER", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I translate human-readable source code into machine language before execution." },
-  { secret_word: "SATELLITE", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I orbit high above Earth, relaying signals, weather data, and GPS coordinates." }
-];
+  // English Vocabulary & Words
+  { category: "English Vocabulary & Words", secret_word: "CONFIDENCE", challenge_type: "Vocabulary Mode", word_length: 10, first_hint: "I am the quiet inner assurance in your own abilities that lets you face a challenge without fear." },
+  { category: "English Vocabulary & Words", secret_word: "FAITH", challenge_type: "Vocabulary Mode", word_length: 5, first_hint: "I am complete trust and belief in something or someone, even when you cannot see the outcome." },
+  { category: "English Vocabulary & Words", secret_word: "RESILIENT", challenge_type: "Vocabulary Mode", word_length: 9, first_hint: "I describe someone who bounces back quickly after facing difficulties or setbacks." },
 
+  // Technology & Devices
+  { category: "Technology & Devices", secret_word: "ALGORITHM", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I am a step-by-step recipe of logic that computers follow to solve problems." },
+  { category: "Technology & Devices", secret_word: "FIREWALL", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I stand as a digital guard between a trusted network and untrusted traffic." },
+
+  // Science & Space
+  { category: "Science & Space", secret_word: "SATELLITE", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I orbit high above Earth, relaying signals, weather data, and GPS coordinates." },
+  { category: "Science & Space", secret_word: "GRAVITY", challenge_type: "Riddle Mode", word_length: 7, first_hint: "I am the invisible force that keeps your feet on the ground and planets orbiting the sun." },
+
+  // Daily Life & Objects
+  { category: "Daily Life & Objects", secret_word: "COMPASS", challenge_type: "Riddle Mode", word_length: 7, first_hint: "I have a magnetic needle that always points north to guide lost travelers." },
+
+  // Nature & Environment
+  { category: "Nature & Environment", secret_word: "MONSOON", challenge_type: "Riddle Mode", word_length: 7, first_hint: "I am a seasonal wind system that brings heavy, life-giving rains across South Asia." },
+
+  // Abstract Concepts
+  { category: "Abstract Concepts", secret_word: "NOSTALGIA", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I am a bittersweet longing for happy memories and places from the past." }
+];
 // Game State (Session Management)
 let state = {
   playerName: "Player",
@@ -106,9 +119,11 @@ async function startRound() {
       previousWords: state.previousWords
     });
   } catch (err) {
-    console.warn("AI busy, using backup challenge:", err.message);
-    const available = BACKUP_CHALLENGES.filter(w => !state.previousWords.includes(w.secret_word.toLowerCase()));
-    const pool = available.length > 0 ? available : BACKUP_CHALLENGES;
+    console.warn("AI busy, using category backup:", err.message);
+    const catMatches = BACKUP_CHALLENGES.filter(w => w.category === category);
+    const basePool = catMatches.length > 0 ? catMatches : BACKUP_CHALLENGES;
+    const available = basePool.filter(w => !state.previousWords.includes(w.secret_word.toLowerCase()));
+    const pool = available.length > 0 ? available : basePool;
     data = pool[Math.floor(Math.random() * pool.length)];
   }
 
