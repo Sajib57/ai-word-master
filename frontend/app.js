@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ১. আপনার লাইভ Cloudflare Worker URL
 const WORKER_API_URL = "https://ai-word-master-api.asraffoisal4.workers.dev";
@@ -15,6 +15,15 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// জরুরি ব্যাকআপ শব্দভাণ্ডার (যদি কখনো AI সার্ভার সাময়িক ব্যস্ত থাকে)
+const BACKUP_CHALLENGES = [
+  { secret_word: "ALGORITHM", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I am a step-by-step recipe of logic that computers follow to solve problems." },
+  { secret_word: "FIREWALL", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I stand as a digital guard between a trusted network and untrusted traffic." },
+  { secret_word: "DATABASE", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I store organized collections of information so apps can retrieve them in milliseconds." },
+  { secret_word: "COMPILER", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I translate human-readable source code into machine language before execution." },
+  { secret_word: "SATELLITE", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I orbit high above Earth, relaying signals, weather data, and GPS coordinates." }
+];
 
 // Game State (Session Management)
 let state = {
@@ -40,14 +49,28 @@ const feedbackBox = document.getElementById("ai-feedback-box");
 const explanationBox = document.getElementById("explanation-box");
 const nextRoundBtn = document.getElementById("next-round-btn");
 
-// Helper: Call Cloudflare Worker
+// Helper: Call Cloudflare Worker with 12s Timeout
 async function callBackend(payload) {
-  const res = await fetch(WORKER_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  return await res.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const res = await fetch(WORKER_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || "Server Error");
+    }
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
 }
 
 // Start Round
@@ -62,17 +85,30 @@ async function startRound() {
   feedbackBox.classList.add("hidden");
   explanationBox.classList.add("hidden");
 
+  const guessInput = document.getElementById("guess-input");
+  const submitBtn = document.getElementById("submit-guess-btn");
+  guessInput.disabled = true;
+  submitBtn.disabled = true;
+
   hintsContainer.innerHTML = "<p>🤖 AI নতুন শব্দ ও চ্যালেঞ্জ তৈরি করছে...</p>";
   state.attempts = 0;
   state.guessHistory = [];
   updateStatsUI();
 
-  const data = await callBackend({
-    action: "start_round",
-    difficulty: state.difficulty,
-    category: category,
-    previousWords: state.previousWords
-  });
+  let data;
+  try {
+    data = await callBackend({
+      action: "start_round",
+      difficulty: state.difficulty,
+      category: category,
+      previousWords: state.previousWords
+    });
+  } catch (err) {
+    console.warn("AI busy, using backup challenge:", err.message);
+    const available = BACKUP_CHALLENGES.filter(w => !state.previousWords.includes(w.secret_word.toLowerCase()));
+    const pool = available.length > 0 ? available : BACKUP_CHALLENGES;
+    data = pool[Math.floor(Math.random() * pool.length)];
+  }
 
   state.secretWord = data.secret_word.toLowerCase();
   state.previousWords.push(state.secretWord);
@@ -82,6 +118,10 @@ async function startRound() {
   hintsContainer.innerHTML = `<div class="hint-item"><strong>Hint 1:</strong> ${data.first_hint}</div>`;
   document.getElementById("closeness-fill").style.width = "0%";
   document.getElementById("closeness-text").textContent = "0%";
+
+  guessInput.disabled = false;
+  submitBtn.disabled = false;
+  guessInput.focus();
 
   startTimer();
 }
@@ -108,7 +148,7 @@ document.getElementById("guess-form").addEventListener("submit", async (e) => {
   const inputEl = document.getElementById("guess-input");
   const submitBtn = document.getElementById("submit-guess-btn");
   const guess = inputEl.value.trim();
-  if (!guess) return;
+  if (!guess || !state.secretWord) return;
 
   inputEl.value = "";
   submitBtn.disabled = true;
@@ -118,14 +158,27 @@ document.getElementById("guess-form").addEventListener("submit", async (e) => {
   state.guessHistory.push(guess);
   updateStatsUI();
 
-  const evalData = await callBackend({
-    action: "evaluate_guess",
-    secret_word: state.secretWord,
-    user_guess: guess,
-    attempt: state.attempts,
-    difficulty: state.difficulty,
-    history: state.guessHistory
-  });
+  let evalData;
+  try {
+    evalData = await callBackend({
+      action: "evaluate_guess",
+      secret_word: state.secretWord,
+      user_guess: guess,
+      attempt: state.attempts,
+      difficulty: state.difficulty,
+      history: state.guessHistory
+    });
+  } catch (err) {
+    const isExact = guess.toLowerCase() === state.secretWord;
+    evalData = {
+      is_correct: isExact,
+      semantic_closeness: isExact ? 100 : Math.min(85, Math.floor(Math.random() * 40) + 25),
+      status_message: isExact ? "🎉 অসাধারণ! একদম সঠিক উত্তর!" : "কাছাকাছি যাচ্ছে, আবার চেষ্টা করুন!",
+      next_hint: `শব্দটি '${state.secretWord[0].toUpperCase()}' অক্ষর দিয়ে শুরু এবং '${state.secretWord.slice(-1).toUpperCase()}' দিয়ে শেষ।`,
+      explanation: `${state.secretWord.toUpperCase()} হলো প্রযুক্তির একটি গুরুত্বপূর্ণ ধারণা।`,
+      recommended_next_difficulty: state.difficulty
+    };
+  }
 
   submitBtn.disabled = false;
   submitBtn.textContent = "Guess";
@@ -141,7 +194,7 @@ document.getElementById("guess-form").addEventListener("submit", async (e) => {
     clearInterval(state.timerInterval);
     const roundPoints = (state.maxAttempts - state.attempts + 1) * 20 + state.timer;
     state.score += roundPoints;
-    state.difficulty = evalData.recommended_next_difficulty;
+    state.difficulty = evalData.recommended_next_difficulty || state.difficulty;
     state.sessionStats.push({ word: state.secretWord, solved: true, attempts: state.attempts });
 
     explanationBox.classList.remove("hidden");
@@ -149,7 +202,7 @@ document.getElementById("guess-form").addEventListener("submit", async (e) => {
     handleRoundOver(true);
   } else if (state.attempts >= state.maxAttempts) {
     clearInterval(state.timerInterval);
-    state.difficulty = evalData.recommended_next_difficulty;
+    state.difficulty = evalData.recommended_next_difficulty || state.difficulty;
     state.sessionStats.push({ word: state.secretWord, solved: false, attempts: state.attempts });
 
     explanationBox.classList.remove("hidden");
@@ -186,24 +239,32 @@ document.getElementById("end-session-btn").addEventListener("click", async () =>
 
   // Save score to Firebase
   if (state.score > 0) {
-    await addDoc(collection(db, "leaderboard"), {
-      name: state.playerName,
-      score: state.score,
-      rounds: state.sessionStats.length,
-      createdAt: serverTimestamp()
-    });
-    loadLeaderboard();
+    try {
+      await addDoc(collection(db, "leaderboard"), {
+        name: state.playerName,
+        score: state.score,
+        rounds: state.sessionStats.length,
+        createdAt: serverTimestamp()
+      });
+      loadLeaderboard();
+    } catch (e) {
+      console.error("Firebase save error:", e);
+    }
   }
 
-  const summary = await callBackend({
-    action: "session_summary",
-    score: state.score,
-    roundsPlayed: state.sessionStats.length,
-    accuracyHistory: state.sessionStats
-  });
-
-  document.getElementById("player-rank-title").textContent = `🏅 Rank: ${summary.player_title}`;
-  document.getElementById("coach-feedback-text").textContent = summary.coach_feedback;
+  try {
+    const summary = await callBackend({
+      action: "session_summary",
+      score: state.score,
+      roundsPlayed: state.sessionStats.length,
+      accuracyHistory: state.sessionStats
+    });
+    document.getElementById("player-rank-title").textContent = `🏅 Rank: ${summary.player_title}`;
+    document.getElementById("coach-feedback-text").textContent = summary.coach_feedback;
+  } catch (e) {
+    document.getElementById("player-rank-title").textContent = `🏅 Rank: Word Explorer (${state.score} pts)`;
+    document.getElementById("coach-feedback-text").textContent = "দারুণ খেলেছেন! নিয়মিত অনুশীলন করলে আপনার শব্দভাণ্ডার আরও সমৃদ্ধ হবে।";
+  }
 });
 
 async function loadLeaderboard() {

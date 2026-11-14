@@ -49,32 +49,46 @@ function jsonResponse(data, headers, status = 200) {
 }
 
 async function callGemini(prompt, schema, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-  const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      temperature: 0.75,
-    },
-  };
+  const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-3.1-pro-preview"];
+  let lastError = "";
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  for (const model of models) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API Error: ${errText}`);
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+          temperature: 0.75,
+        },
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        const rawText = result.candidates[0].content.parts[0].text;
+        return JSON.parse(rawText);
+      }
+
+      lastError = await res.text();
+      // যদি সার্ভার ব্যস্ত থাকে (503 বা 429), তবে ১ সেকেন্ড অপেক্ষা করে আবার চেষ্টা করবে
+      if (res.status === 503 || res.status === 429) {
+        await new Promise((r) => setTimeout(r, 300));
+        continue;
+      }
+      break;
+    }
   }
 
-  const result = await res.json();
-  const rawText = result.candidates[0].content.parts[0].text;
-  return JSON.parse(rawText);
+  throw new Error(`Gemini API Error: ${lastError}`);
 }
-
 // ১. নতুন রাউন্ড ও চ্যালেঞ্জ তৈরি (Word + Hint + Difficulty)
 async function handleStartRound({ difficulty, category, previousWords = [] }, apiKey) {
   const prompt = `
