@@ -18,13 +18,13 @@ const db = getFirestore(app);
 
 // জরুরি ব্যাকআপ শব্দভাণ্ডার (যদি কখনো AI সার্ভার সাময়িক ব্যস্ত থাকে)
 const BACKUP_CHALLENGES = [
+  { secret_word: "CONFIDENCE", challenge_type: "Vocabulary Mode", word_length: 10, first_hint: "I am the quiet inner assurance in your own abilities that lets you step onto a stage or face a challenge without fear." },
+  { secret_word: "FAITH", challenge_type: "Vocabulary Mode", word_length: 5, first_hint: "I am complete trust and belief in something or someone, even when you cannot see the outcome with your own eyes." },
   { secret_word: "ALGORITHM", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I am a step-by-step recipe of logic that computers follow to solve problems." },
   { secret_word: "FIREWALL", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I stand as a digital guard between a trusted network and untrusted traffic." },
   { secret_word: "DATABASE", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I store organized collections of information so apps can retrieve them in milliseconds." },
   { secret_word: "COMPILER", challenge_type: "Riddle Mode", word_length: 8, first_hint: "I translate human-readable source code into machine language before execution." },
   { secret_word: "SATELLITE", challenge_type: "Riddle Mode", word_length: 9, first_hint: "I orbit high above Earth, relaying signals, weather data, and GPS coordinates." }
-  { secret_word: "CONFIDENCE", challenge_type: "Vocabulary Mode", word_length: 10, first_hint: "I am the quiet inner assurance in your own abilities that lets you step onto a stage or face a challenge without fear." },
-  { secret_word: "FAITH", challenge_type: "Vocabulary Mode", word_length: 5, first_hint: "I am complete trust and belief in something or someone, even when you cannot see the outcome with your own eyes."},
 ];
 
 // Game State (Session Management)
